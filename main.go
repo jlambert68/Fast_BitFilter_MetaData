@@ -189,4 +189,82 @@ func main() {
 	fmt.Printf("   Name (%q): %s\n", "nameY", entryA.Name.String())
 	fmt.Printf("  Value (%q): %s\n", "val3", entryA.Value.String())
 
+	// 3) Create two Entry objects:
+	//
+	//   entryA → ("domain2", "groupA", "nameY", "val3")
+	//   entryB → ("domain3", "groupB", "nameZ", "val2")
+	//
+	entryA, err = bitmapper.NewEntry(
+		"domain2", "groupA", "nameY", "val3",
+		domainMap, groupMap, nameMap, valueMap,
+	)
+	if err != nil {
+		log.Fatalf("NewEntry A error: %v", err)
+	}
+
+	entryB, err = bitmapper.NewEntry(
+		"domain3", "groupB", "nameZ", "val2",
+		domainMap, groupMap, nameMap, valueMap,
+	)
+	if err != nil {
+		log.Fatalf("NewEntry B error: %v", err)
+	}
+
+	// 4) Perform bitwise AND between entryA and entryB.
+	andEntry, err := entryA.And(entryB)
+	if err != nil {
+		log.Fatalf("entryA.And(entryB) error: %v", err)
+	}
+	fmt.Println("=== entryA AND entryB ===")
+	fmt.Printf("  Domain: %s\n", andEntry.Domain.String())
+	fmt.Printf("   Group: %s\n", andEntry.Group.String())
+	fmt.Printf("    Name: %s\n", andEntry.Name.String())
+	fmt.Printf("   Value: %s\n\n", andEntry.Value.String())
+
+	// 5) Perform bitwise OR between entryA and entryB.
+	orEntry, err := entryA.Or(entryB)
+	if err != nil {
+		log.Fatalf("entryA.Or(entryB) error: %v", err)
+	}
+	fmt.Println("=== entryA OR entryB ===")
+	fmt.Printf("  Domain: %s\n", orEntry.Domain.String())
+	fmt.Printf("   Group: %s\n", orEntry.Group.String())
+	fmt.Printf("    Name: %s\n", orEntry.Name.String())
+	fmt.Printf("   Value: %s\n\n", orEntry.Value.String())
+
+	// 6) Perform bitwise XOR between entryA and entryB.
+	xorEntry, err := entryA.Xor(entryB)
+	if err != nil {
+		log.Fatalf("entryA.Xor(entryB) error: %v", err)
+	}
+	fmt.Println("=== entryA XOR entryB ===")
+	fmt.Printf("  Domain: %s\n", xorEntry.Domain.String())
+	fmt.Printf("   Group: %s\n", xorEntry.Group.String())
+	fmt.Printf("    Name: %s\n", xorEntry.Name.String())
+	fmt.Printf("   Value: %s\n\n", xorEntry.Value.String())
+
+	// 7) Perform a bitwise NOT on entryA (unary).
+	notA, err := entryA.Not()
+	if err != nil {
+		log.Fatalf("entryA.Not() error: %v", err)
+	}
+	fmt.Println("=== NOT entryA ===")
+	fmt.Printf("  Domain: %s\n", notA.Domain.String())
+	fmt.Printf("   Group: %s\n", notA.Group.String())
+	fmt.Printf("    Name: %s\n", notA.Name.String())
+	fmt.Printf("   Value: %s\n\n", notA.Value.String())
+
+	// 8) Show entryA and entryB in hex for reference.
+	fmt.Println("=== entryA original BitSets ===")
+	fmt.Printf("  Domain(\"domain2\"): %s\n", entryA.Domain.String())
+	fmt.Printf("   Group(\"groupA\"): %s\n", entryA.Group.String())
+	fmt.Printf("    Name(\"nameY\"):  %s\n", entryA.Name.String())
+	fmt.Printf("   Value(\"val3\"):   %s\n\n", entryA.Value.String())
+
+	fmt.Println("=== entryB original BitSets ===")
+	fmt.Printf("  Domain(\"domain3\"): %s\n", entryB.Domain.String())
+	fmt.Printf("   Group(\"groupB\"): %s\n", entryB.Group.String())
+	fmt.Printf("    Name(\"nameZ\"):  %s\n", entryB.Name.String())
+	fmt.Printf("   Value(\"val2\"):   %s\n", entryB.Value.String())
+
 }
