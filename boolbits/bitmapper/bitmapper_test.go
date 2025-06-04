@@ -8,8 +8,12 @@ Handle empty input slices.
 Ensure order of first appearance determines bit-index.
 Verify integration with boolbits.BitSet operations (AND/OR).
 Show using reflect.DeepEqual for map comparison.
+
 A successful creation of Entry with valid keys.
 Failure scenarios for missing keys in each position.
+
+Verifies that identical entries are equal, and varying any field yields inequality.
+Checks that comparing against a nil Entry returns false.
 */
 
 import (
@@ -252,5 +256,54 @@ func TestNewEntry_SuccessAndFailure(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected error for missing key combination (%s,%s,%s,%s), got nil", c.dKey, c.gKey, c.nKey, c.vKey)
 		}
+	}
+}
+
+// Tests if two entries are equal or not
+func TestEntryEquals(t *testing.T) {
+	// Setup maps
+	domains := []string{"d1", "d2"}
+	groups := []string{"g1", "g2"}
+	names := []string{"n1"}
+	values := []string{"v1", "v2", "v3"}
+
+	domainMap, groupMap, nameMap, valueMap, err := GenerateBitMaps(domains, groups, names, values)
+	if err != nil {
+		t.Fatalf("GenerateBitMaps error: %v", err)
+	}
+
+	// Create two identical entries
+	entryA, _ := NewEntry("d2", "g2", "n1", "v3", domainMap, groupMap, nameMap, valueMap)
+	entryB, _ := NewEntry("d2", "g2", "n1", "v3", domainMap, groupMap, nameMap, valueMap)
+
+	if !entryA.Equals(entryB) {
+		t.Errorf("Expected entryA to equal entryB")
+	}
+
+	// Create a different entry (different domain)
+	entryC, _ := NewEntry("d1", "g2", "n1", "v3", domainMap, groupMap, nameMap, valueMap)
+	if entryA.Equals(entryC) {
+		t.Errorf("Expected entryA not to equal entryC")
+	}
+
+	// Create a different entry (different group)
+	entryD, _ := NewEntry("d2", "g1", "n1", "v3", domainMap, groupMap, nameMap, valueMap)
+	if entryA.Equals(entryD) {
+		t.Errorf("Expected entryA not to equal entryD")
+	}
+
+	// Create a different entry (different value)
+	entryE, _ := NewEntry("d2", "g2", "n1", "v2", domainMap, groupMap, nameMap, valueMap)
+	if entryA.Equals(entryE) {
+		t.Errorf("Expected entryA not to equal entryE")
+	}
+
+	// Nil comparisons
+	var nilEntry *Entry = nil
+	if entryA.Equals(nilEntry) {
+		t.Errorf("Expected entryA not to equal nil entry")
+	}
+	if nilEntry != nil && nilEntry.Equals(entryA) {
+		t.Errorf("Expected nil entry not to equal entryA")
 	}
 }

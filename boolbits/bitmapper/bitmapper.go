@@ -138,3 +138,14 @@ func NewEntry(
 		Value:  valueBS,
 	}, nil
 }
+
+// Equals compares two Entries. Returns true if all corresponding BitSets are equal.
+func (e *Entry) Equals(o *Entry) bool {
+	if e == nil || o == nil {
+		return false
+	}
+	return e.Domain.Equals(o.Domain) &&
+		e.Group.Equals(o.Group) &&
+		e.Name.Equals(o.Name) &&
+		e.Value.Equals(o.Value)
+}

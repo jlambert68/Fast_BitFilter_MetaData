@@ -122,9 +122,9 @@ func main() {
 
 	domainMap, groupMap, nameMap, valueMap, err := bitmapper.GenerateBitMaps(
 		[]string{"domain1", "domain2", "domain1", "domain3"},
-		[]string{"group1", "group2", "group3"},
-		[]string{"nameA", "nameB", "nameA"},
-		[]string{"valX", "valY"},
+		[]string{"group1", "group2", "group3", "groupA", "groupB"},
+		[]string{"nameA", "nameB", "nameA", "nameY", "nameZ"},
+		[]string{"valX", "valY", "val2", "val3"},
 	)
 
 	if err != nil {
@@ -149,4 +149,44 @@ func main() {
 	fmt.Printf(" Group BitSet for %q: %s\n", "group1", entry.Group.String())
 	fmt.Printf("  Name BitSet for %q: %s\n", "nameA", entry.Name.String())
 	fmt.Printf(" Value BitSet for %q: %s\n", "valY", entry.Value.String())
+
+	//  Create two Entry objects:
+	//    - entryA uses ("domain2", "groupA", "nameY", "val3")
+	//    - entryB uses ("domain2", "groupA", "nameY", "val3") → identical to entryA
+	//    - entryC uses ("domain1", "groupB", "nameZ", "val2") → different combination
+	entryA, err := bitmapper.NewEntry(
+		"domain2", "groupA", "nameY", "val3",
+		domainMap, groupMap, nameMap, valueMap,
+	)
+	if err != nil {
+		log.Fatalf("NewEntry A error: %v", err)
+	}
+
+	entryB, err := bitmapper.NewEntry(
+		"domain2", "groupA", "nameY", "val3",
+		domainMap, groupMap, nameMap, valueMap,
+	)
+	if err != nil {
+		log.Fatalf("NewEntry B error: %v", err)
+	}
+
+	entryC, err := bitmapper.NewEntry(
+		"domain1", "groupB", "nameZ", "val2",
+		domainMap, groupMap, nameMap, valueMap,
+	)
+	if err != nil {
+		log.Fatalf("NewEntry C error: %v", err)
+	}
+
+	// 4) Compare using Equals()
+	fmt.Printf("entryA.Equals(entryB)? %v (expected true)\n", entryA.Equals(entryB))
+	fmt.Printf("entryA.Equals(entryC)? %v (expected false)\n", entryA.Equals(entryC))
+
+	// 5) Print out the four BitSets inside entryA for reference
+	fmt.Println("\n-- entryA BitSets (hex) --")
+	fmt.Printf(" Domain (%q): %s\n", "domain2", entryA.Domain.String())
+	fmt.Printf("  Group (%q): %s\n", "groupA", entryA.Group.String())
+	fmt.Printf("   Name (%q): %s\n", "nameY", entryA.Name.String())
+	fmt.Printf("  Value (%q): %s\n", "val3", entryA.Value.String())
+
 }
