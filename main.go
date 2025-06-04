@@ -134,4 +134,19 @@ func main() {
 	fmt.Println("groupMap", groupMap)
 	fmt.Println("nameMap", nameMap)
 	fmt.Println("valueMap", valueMap)
+
+	entry, err := bitmapper.NewEntry(
+		"domain2", "group1", "nameA", "valY",
+		domainMap, groupMap, nameMap, valueMap,
+	)
+	if err != nil {
+		log.Fatalf("NewEntry error: %v", err)
+	}
+
+	// Print out the four BitSets inside the entry:
+	fmt.Println("\n---- Example Entry ----")
+	fmt.Printf("Domain BitSet for %q: %s\n", "domain2", entry.Domain.String())
+	fmt.Printf(" Group BitSet for %q: %s\n", "group1", entry.Group.String())
+	fmt.Printf("  Name BitSet for %q: %s\n", "nameA", entry.Name.String())
+	fmt.Printf(" Value BitSet for %q: %s\n", "valY", entry.Value.String())
 }

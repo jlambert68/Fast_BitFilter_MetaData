@@ -8,6 +8,8 @@ Handle empty input slices.
 Ensure order of first appearance determines bit-index.
 Verify integration with boolbits.BitSet operations (AND/OR).
 Show using reflect.DeepEqual for map comparison.
+A successful creation of Entry with valid keys.
+Failure scenarios for missing keys in each position.
 */
 
 import (
@@ -201,5 +203,54 @@ func TestReflectDeepEqualExample(t *testing.T) {
 	}
 	if !reflect.DeepEqual(domainMap1, domainMap2) {
 		t.Errorf("Expected identical maps, but got differences")
+	}
+}
+
+// New tests for NewEntry
+func TestNewEntry_SuccessAndFailure(t *testing.T) {
+	// Prepare maps via GenerateBitMaps
+	domains := []string{"d1", "d2"}
+	groups := []string{"g1"}
+	names := []string{"n1", "n2", "n3"}
+	values := []string{"v1", "v2"}
+
+	domainMap, groupMap, nameMap, valueMap, err := GenerateBitMaps(domains, groups, names, values)
+	if err != nil {
+		t.Fatalf("GenerateBitMaps error: %v", err)
+	}
+
+	// Successful creation
+	entry, err := NewEntry("d2", "g1", "n3", "v1", domainMap, groupMap, nameMap, valueMap)
+	if err != nil {
+		t.Errorf("NewEntry returned unexpected error: %v", err)
+	}
+	// Validate that the BitSets correspond to right keys
+	if entry.Domain != domainMap["d2"] {
+		t.Errorf("Expected entry.Domain to be domainMap[\"d2\"], got different BitSet")
+	}
+	if entry.Group != groupMap["g1"] {
+		t.Errorf("Expected entry.Group to be groupMap[\"g1\"], got different BitSet")
+	}
+	if entry.Name != nameMap["n3"] {
+		t.Errorf("Expected entry.Name to be nameMap[\"n3\"], got different BitSet")
+	}
+	if entry.Value != valueMap["v1"] {
+		t.Errorf("Expected entry.Value to be valueMap[\"v1\"], got different BitSet")
+	}
+
+	// Failure cases: missing keys
+	cases := []struct {
+		dKey, gKey, nKey, vKey string
+	}{
+		{"missing", "g1", "n1", "v1"},
+		{"d1", "missing", "n1", "v1"},
+		{"d1", "g1", "missing", "v1"},
+		{"d1", "g1", "n1", "missing"},
+	}
+	for _, c := range cases {
+		_, err := NewEntry(c.dKey, c.gKey, c.nKey, c.vKey, domainMap, groupMap, nameMap, valueMap)
+		if err == nil {
+			t.Errorf("Expected error for missing key combination (%s,%s,%s,%s), got nil", c.dKey, c.gKey, c.nKey, c.vKey)
+		}
 	}
 }
