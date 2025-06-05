@@ -3,7 +3,7 @@ package bitmapper
 import (
 	"fmt"
 
-	"Fast_BitFilter_MetaData/boolbits/boolbits"
+	"github.com/jlambert68/Fast_BitFilter_MetaData/boolbits/boolbits"
 )
 
 // GenerateBitMaps takes four string slices (domains, metadataGroupNames, metadataNames, metadataValues),

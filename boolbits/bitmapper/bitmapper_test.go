@@ -17,7 +17,7 @@ Checks that comparing against a nil Entry returns false.
 */
 
 import (
-	"Fast_BitFilter_MetaData/boolbits/boolbits"
+	"github.com/jlambert68/Fast_BitFilter_MetaData/boolbits/boolbits"
 	"reflect"
 	"testing"
 )

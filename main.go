@@ -1,9 +1,9 @@
 package main
 
 import (
-	"Fast_BitFilter_MetaData/boolbits/bitmapper"
-	"Fast_BitFilter_MetaData/boolbits/boolbits"
 	"fmt"
+	"github.com/jlambert68/Fast_BitFilter_MetaData/boolbits/bitmapper"
+	"github.com/jlambert68/Fast_BitFilter_MetaData/boolbits/boolbits"
 	"log"
 )
 
