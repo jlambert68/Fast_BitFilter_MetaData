@@ -196,3 +196,27 @@ func NewAllOnesEntry(bitLen int) (*Entry, error) {
 	valueBS := fillAllOnes()
 	return &Entry{Domain: domainBS, Group: groupBS, Name: nameBS, Value: valueBS}, nil
 }
+
+// NewAllZerosEntry constructs an Entry where each BitSet has all bits set to 0.
+// bitLen must be a positive multiple of 64; returns an error otherwise.
+func NewAllZerosEntry(bitLen int) (*Entry, error) {
+	// Validate bitLen
+	if bitLen <= 0 || bitLen%64 != 0 {
+		return nil, fmt.Errorf("bit length must be a positive multiple of 64 (got %d)", bitLen)
+	}
+	// Number of 64-bit words
+	numWords := bitLen / 64
+	// Create a BitSet and set all bits by filling each word with all ones
+	fillAllZeros := func() *BitSet {
+		b := make([]uint64, numWords)
+		for i := 0; i < numWords; i++ {
+			b[i] = uint64(0)
+		}
+		return &BitSet{Words: b, NumBits: bitLen, numWords: numWords}
+	}
+	domainBS := fillAllZeros()
+	groupBS := fillAllZeros()
+	nameBS := fillAllZeros()
+	valueBS := fillAllZeros()
+	return &Entry{Domain: domainBS, Group: groupBS, Name: nameBS, Value: valueBS}, nil
+}
