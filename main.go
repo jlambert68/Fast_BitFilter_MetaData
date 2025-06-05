@@ -135,136 +135,97 @@ func main() {
 	fmt.Println("nameMap", nameMap)
 	fmt.Println("valueMap", valueMap)
 
-	entry, err := bitmapper.NewEntry(
-		"domain2", "group1", "nameA", "valY",
-		domainMap, groupMap, nameMap, valueMap,
-	)
-	if err != nil {
-		log.Fatalf("NewEntry error: %v", err)
-	}
-
-	// Print out the four BitSets inside the entry:
-	fmt.Println("\n---- Example Entry ----")
-	fmt.Printf("Domain BitSet for %q: %s\n", "domain2", entry.Domain.String())
-	fmt.Printf(" Group BitSet for %q: %s\n", "group1", entry.Group.String())
-	fmt.Printf("  Name BitSet for %q: %s\n", "nameA", entry.Name.String())
-	fmt.Printf(" Value BitSet for %q: %s\n", "valY", entry.Value.String())
-
-	//  Create two Entry objects:
-	//    - entryA uses ("domain2", "groupA", "nameY", "val3")
-	//    - entryB uses ("domain2", "groupA", "nameY", "val3") → identical to entryA
-	//    - entryC uses ("domain1", "groupB", "nameZ", "val2") → different combination
-	entryA, err := bitmapper.NewEntry(
-		"domain2", "groupA", "nameY", "val3",
-		domainMap, groupMap, nameMap, valueMap,
+	entryA, err := boolbits.NewEntry(
+		domainMap["domain2"],
+		groupMap["groupA"],
+		nameMap["nameY"],
+		valueMap["val3"],
 	)
 	if err != nil {
 		log.Fatalf("NewEntry A error: %v", err)
 	}
 
-	entryB, err := bitmapper.NewEntry(
-		"domain2", "groupA", "nameY", "val3",
-		domainMap, groupMap, nameMap, valueMap,
+	entryB, err := boolbits.NewEntry(
+		domainMap["domain2"],
+		groupMap["groupA"],
+		nameMap["nameY"],
+		valueMap["val3"],
 	)
 	if err != nil {
 		log.Fatalf("NewEntry B error: %v", err)
 	}
 
-	entryC, err := bitmapper.NewEntry(
-		"domain1", "groupB", "nameZ", "val2",
-		domainMap, groupMap, nameMap, valueMap,
+	entryC, err := boolbits.NewEntry(
+		domainMap["domain1"],
+		groupMap["groupB"],
+		nameMap["nameZ"],
+		valueMap["val2"],
 	)
 	if err != nil {
 		log.Fatalf("NewEntry C error: %v", err)
 	}
 
-	// 4) Compare using Equals()
+	// 4) Compare them with Equals()
 	fmt.Printf("entryA.Equals(entryB)? %v (expected true)\n", entryA.Equals(entryB))
 	fmt.Printf("entryA.Equals(entryC)? %v (expected false)\n", entryA.Equals(entryC))
 
-	// 5) Print out the four BitSets inside entryA for reference
+	// 5) Print each Entry's BitSet fields (hex string) for reference
 	fmt.Println("\n-- entryA BitSets (hex) --")
-	fmt.Printf(" Domain (%q): %s\n", "domain2", entryA.Domain.String())
-	fmt.Printf("  Group (%q): %s\n", "groupA", entryA.Group.String())
-	fmt.Printf("   Name (%q): %s\n", "nameY", entryA.Name.String())
-	fmt.Printf("  Value (%q): %s\n", "val3", entryA.Value.String())
+	fmt.Printf("  Domain(%q): %s\n", "domain2", entryA.Domain.String())
+	fmt.Printf("   Group(%q): %s\n", "groupA", entryA.Group.String())
+	fmt.Printf("    Name(%q): %s\n", "nameY", entryA.Name.String())
+	fmt.Printf("   Value(%q): %s\n", "val3", entryA.Value.String())
 
-	// 3) Create two Entry objects:
-	//
-	//   entryA → ("domain2", "groupA", "nameY", "val3")
-	//   entryB → ("domain3", "groupB", "nameZ", "val2")
-	//
-	entryA, err = bitmapper.NewEntry(
-		"domain2", "groupA", "nameY", "val3",
-		domainMap, groupMap, nameMap, valueMap,
+	fmt.Println("\n-- entryC BitSets (hex) --")
+	fmt.Printf("  Domain(%q): %s\n", "domain1", entryC.Domain.String())
+	fmt.Printf("   Group(%q): %s\n", "groupB", entryC.Group.String())
+	fmt.Printf("    Name(%q): %s\n", "nameZ", entryC.Name.String())
+	fmt.Printf("   Value(%q): %s\n", "val2", entryC.Value.String())
+
+	// 3) Create a “normal” Entry for some combination, e.g.:
+	//    domain="domainB", group="group2", name="nameY", value="valBeta"
+	otherEntry, err := boolbits.NewEntry(
+		domainMap["domain1"],
+		groupMap["group2"],
+		nameMap["nameY"],
+		valueMap["valX"],
 	)
 	if err != nil {
-		log.Fatalf("NewEntry A error: %v", err)
+		log.Fatalf("NewEntry error: %v", err)
 	}
 
-	entryB, err = bitmapper.NewEntry(
-		"domain3", "groupB", "nameZ", "val2",
-		domainMap, groupMap, nameMap, valueMap,
-	)
+	//) Determine the bit-length for NewAllOnesEntry: all four BitSets in otherEntry
+	//    have the same NumBits, so we can pick any one, e.g., otherEntry.Domain.NumBits
+	bitLen := otherEntry.Domain.NumBits
+
+	// 5) Generate an all-ones Entry of the same bit length
+	allOnesEntry, err := boolbits.NewAllOnesEntry(bitLen)
 	if err != nil {
-		log.Fatalf("NewEntry B error: %v", err)
+		log.Fatalf("NewAllOnesEntry error: %v", err)
 	}
 
-	// 4) Perform bitwise AND between entryA and entryB.
-	andEntry, err := entryA.And(entryB)
+	// 6) Perform a bitwise AND between allOnesEntry and otherEntry
+	andEntry, err := allOnesEntry.And(otherEntry)
 	if err != nil {
-		log.Fatalf("entryA.And(entryB) error: %v", err)
+		log.Fatalf("AND operation error: %v", err)
 	}
-	fmt.Println("=== entryA AND entryB ===")
-	fmt.Printf("  Domain: %s\n", andEntry.Domain.String())
-	fmt.Printf("   Group: %s\n", andEntry.Group.String())
-	fmt.Printf("    Name: %s\n", andEntry.Name.String())
-	fmt.Printf("   Value: %s\n\n", andEntry.Value.String())
 
-	// 5) Perform bitwise OR between entryA and entryB.
-	orEntry, err := entryA.Or(entryB)
-	if err != nil {
-		log.Fatalf("entryA.Or(entryB) error: %v", err)
-	}
-	fmt.Println("=== entryA OR entryB ===")
-	fmt.Printf("  Domain: %s\n", orEntry.Domain.String())
-	fmt.Printf("   Group: %s\n", orEntry.Group.String())
-	fmt.Printf("    Name: %s\n", orEntry.Name.String())
-	fmt.Printf("   Value: %s\n\n", orEntry.Value.String())
+	// 7) Print results
+	fmt.Println("=== otherEntry (hex) ===")
+	fmt.Printf(" Domain (%q): %s\n", "domainB", otherEntry.Domain.String())
+	fmt.Printf("  Group (%q): %s\n", "group2", otherEntry.Group.String())
+	fmt.Printf("   Name (%q): %s\n", "nameY", otherEntry.Name.String())
+	fmt.Printf("  Value (%q): %s\n\n", "valBeta", otherEntry.Value.String())
 
-	// 6) Perform bitwise XOR between entryA and entryB.
-	xorEntry, err := entryA.Xor(entryB)
-	if err != nil {
-		log.Fatalf("entryA.Xor(entryB) error: %v", err)
-	}
-	fmt.Println("=== entryA XOR entryB ===")
-	fmt.Printf("  Domain: %s\n", xorEntry.Domain.String())
-	fmt.Printf("   Group: %s\n", xorEntry.Group.String())
-	fmt.Printf("    Name: %s\n", xorEntry.Name.String())
-	fmt.Printf("   Value: %s\n\n", xorEntry.Value.String())
+	fmt.Println("=== allOnesEntry (hex) ===")
+	fmt.Printf(" Domain: %s\n", allOnesEntry.Domain.String())
+	fmt.Printf("  Group: %s\n", allOnesEntry.Group.String())
+	fmt.Printf("   Name: %s\n", allOnesEntry.Name.String())
+	fmt.Printf("  Value: %s\n\n", allOnesEntry.Value.String())
 
-	// 7) Perform a bitwise NOT on entryA (unary).
-	notA, err := entryA.Not()
-	if err != nil {
-		log.Fatalf("entryA.Not() error: %v", err)
-	}
-	fmt.Println("=== NOT entryA ===")
-	fmt.Printf("  Domain: %s\n", notA.Domain.String())
-	fmt.Printf("   Group: %s\n", notA.Group.String())
-	fmt.Printf("    Name: %s\n", notA.Name.String())
-	fmt.Printf("   Value: %s\n\n", notA.Value.String())
-
-	// 8) Show entryA and entryB in hex for reference.
-	fmt.Println("=== entryA original BitSets ===")
-	fmt.Printf("  Domain(\"domain2\"): %s\n", entryA.Domain.String())
-	fmt.Printf("   Group(\"groupA\"): %s\n", entryA.Group.String())
-	fmt.Printf("    Name(\"nameY\"):  %s\n", entryA.Name.String())
-	fmt.Printf("   Value(\"val3\"):   %s\n\n", entryA.Value.String())
-
-	fmt.Println("=== entryB original BitSets ===")
-	fmt.Printf("  Domain(\"domain3\"): %s\n", entryB.Domain.String())
-	fmt.Printf("   Group(\"groupB\"): %s\n", entryB.Group.String())
-	fmt.Printf("    Name(\"nameZ\"):  %s\n", entryB.Name.String())
-	fmt.Printf("   Value(\"val2\"):   %s\n", entryB.Value.String())
-
+	fmt.Println("=== AND(allOnesEntry, otherEntry) ===")
+	fmt.Printf(" Domain: %s\n", andEntry.Domain.String())
+	fmt.Printf("  Group: %s\n", andEntry.Group.String())
+	fmt.Printf("   Name: %s\n", andEntry.Name.String())
+	fmt.Printf("  Value: %s\n", andEntry.Value.String())
 }

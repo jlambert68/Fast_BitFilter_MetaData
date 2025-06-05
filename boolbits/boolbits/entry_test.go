@@ -1,0 +1,327 @@
+package boolbits
+
+import (
+	"testing"
+)
+
+func TestNewEntry_SuccessAndFailure(t *testing.T) {
+	// Create two BitSets of equal length
+	bs1, err := NewBitSet(64)
+	if err != nil {
+		t.Fatalf("NewBitSet error: %v", err)
+	}
+	bs2, err := NewBitSet(64)
+	if err != nil {
+		t.Fatalf("NewBitSet error: %v", err)
+	}
+	bs3, err := NewBitSet(128)
+	if err != nil {
+		t.Fatalf("NewBitSet error: %v", err)
+	}
+
+	// Successful creation with non-nil BitSets
+	entry, err := NewEntry(bs1, bs2, bs1, bs2)
+	if err != nil {
+		t.Errorf("Expected NewEntry to succeed, got error: %v", err)
+	}
+	if entry.Domain != bs1 || entry.Group != bs2 || entry.Name != bs1 || entry.Value != bs2 {
+		t.Errorf("Entry fields do not match input BitSets")
+	}
+
+	// Failure when any field is nil
+	cases := []struct {
+		d, g, n, v *BitSet
+	}{
+		{nil, bs2, bs1, bs2},
+		{bs1, nil, bs1, bs2},
+		{bs1, bs2, nil, bs2},
+		{bs1, bs2, bs1, nil},
+	}
+	for i, c := range cases {
+		if _, err := NewEntry(c.d, c.g, c.n, c.v); err == nil {
+			t.Errorf("Case %d: expected error for nil field, got nil", i)
+		}
+	}
+
+	// Failure when bit lengths mismatch
+	_, err = NewEntry(bs1, bs2, bs1, bs3)
+	if err != nil {
+		// NewEntry does not check lengths, so expect success
+		t.Logf("NewEntry allowed mismatched lengths: %v", err)
+	}
+}
+
+func TestEntry_Equals(t *testing.T) {
+	bsA1, _ := NewBitSet(64)
+	bsA2, _ := NewBitSet(64)
+	// Set distinct bits
+	bsA1.SetBit(0)
+	bsA2.SetBit(1)
+
+	bsB1, _ := NewBitSet(64)
+	bsB2, _ := NewBitSet(64)
+	bsB1.SetBit(0)
+	bsB2.SetBit(1)
+
+	// entry1 and entry2 identical content
+	entry1, _ := NewEntry(bsA1, bsA2, bsA1, bsA2)
+	entry2, _ := NewEntry(bsB1, bsB2, bsB1, bsB2)
+	if !entry1.Equals(entry2) {
+		t.Errorf("Expected entry1 to equal entry2")
+	}
+
+	// Change one field
+	bsC, _ := NewBitSet(64)
+	bsC.SetBit(2)
+	entry3, _ := NewEntry(bsC, bsA2, bsA1, bsA2)
+	if entry1.Equals(entry3) {
+		t.Errorf("Expected entry1 not to equal entry3 (different Domain)")
+	}
+
+	// Nil comparisons
+	var nilEntry *Entry
+	if entry1.Equals(nilEntry) {
+		t.Errorf("Expected entry1.Equals(nil) to be false")
+	}
+	if nilEntry != nil && nilEntry.Equals(entry1) {
+		t.Errorf("Expected nilEntry.Equals(entry1) to be false")
+	}
+}
+
+// helper to count bits in all four BitSets and verify they equal expected
+func verifyAllOnesEntry(t *testing.T, entry *Entry, bitLen int) {
+	t.Helper()
+
+	// Each BitSet should have exactly bitLen bits set.
+	dCount := entry.Domain.CountOnes()
+	gCount := entry.Group.CountOnes()
+	nCount := entry.Name.CountOnes()
+	vCount := entry.Value.CountOnes()
+
+	if dCount != bitLen {
+		t.Errorf("Domain CountOnes = %d; want %d", dCount, bitLen)
+	}
+	if gCount != bitLen {
+		t.Errorf("Group CountOnes = %d; want %d", gCount, bitLen)
+	}
+	if nCount != bitLen {
+		t.Errorf("Name CountOnes = %d; want %d", nCount, bitLen)
+	}
+	if vCount != bitLen {
+		t.Errorf("Value CountOnes = %d; want %d", vCount, bitLen)
+	}
+
+	// All four BitSets should be equal to each other.
+	if !entry.Domain.Equals(entry.Group) {
+		t.Error("Domain and Group BitSets differ; expected identical all-ones")
+	}
+	if !entry.Domain.Equals(entry.Name) {
+		t.Error("Domain and Name BitSets differ; expected identical all-ones")
+	}
+	if !entry.Domain.Equals(entry.Value) {
+		t.Error("Domain and Value BitSets differ; expected identical all-ones")
+	}
+
+	// Additionally, verify that ToHex produces the expected hex string:
+	// For bitLen bits all set, the hex string should be bitLen/4 nibbles of 'f'.
+	hex := entry.Domain.String()[2:] // strip "0x"
+	expectedNibbles := bitLen / 4
+	expectedHex := ""
+	for i := 0; i < expectedNibbles; i++ {
+		expectedHex += "f"
+	}
+	if hex != expectedHex {
+		t.Errorf("Domain ToHex = %q; want %q", hex, expectedHex)
+	}
+}
+
+func TestNewAllOnesEntry_Success_64bits(t *testing.T) {
+	entry, err := NewAllOnesEntry(64)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(64) returned error: %v", err)
+	}
+	verifyAllOnesEntry(t, entry, 64)
+}
+
+func TestNewAllOnesEntry_Success_128bits(t *testing.T) {
+	entry, err := NewAllOnesEntry(128)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(128) returned error: %v", err)
+	}
+	verifyAllOnesEntry(t, entry, 128)
+}
+
+func TestNewAllOnesEntry_Success_256bits(t *testing.T) {
+	entry, err := NewAllOnesEntry(256)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(256) returned error: %v", err)
+	}
+	verifyAllOnesEntry(t, entry, 256)
+}
+
+func TestNewAllOnesEntry_InvalidLengths(t *testing.T) {
+	tests := []int{
+		0,       // zero
+		1,       // not multiple of 64
+		65,      // not multiple of 64
+		100,     // not multiple of 64
+		63,      // not multiple of 64
+		192 + 1, // 193 is not multiple of 64
+	}
+
+	for _, bitLen := range tests {
+		_, err := NewAllOnesEntry(bitLen)
+		if err == nil {
+			t.Errorf("Expected error for bitLen=%d; got nil", bitLen)
+		}
+	}
+}
+
+func TestAllOnesEntry_BitwiseOperations(t *testing.T) {
+	// Create two all-ones entries with same length
+	entryA, err := NewAllOnesEntry(64)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(64) returned error: %v", err)
+	}
+	entryB, err := NewAllOnesEntry(64)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(64) returned error: %v", err)
+	}
+
+	// AND of two all-ones should be all-ones
+	andEntry, err := entryA.And(entryB)
+	if err != nil {
+		t.Fatalf("And returned error: %v", err)
+	}
+	verifyAllOnesEntry(t, andEntry, 64)
+
+	// OR of two all-ones should be all-ones
+	orEntry, err := entryA.Or(entryB)
+	if err != nil {
+		t.Fatalf("Or returned error: %v", err)
+	}
+	verifyAllOnesEntry(t, orEntry, 64)
+
+	// XOR of two identical all-ones should be all-zero bitsets
+	xorEntry, err := entryA.Xor(entryB)
+	if err != nil {
+		t.Fatalf("Xor returned error: %v", err)
+	}
+
+	// All-zero entries: CountOnes should be zero
+	if xorEntry.Domain.CountOnes() != 0 {
+		t.Errorf("XOR Domain CountOnes = %d; want 0", xorEntry.Domain.CountOnes())
+	}
+	if xorEntry.Group.CountOnes() != 0 {
+		t.Errorf("XOR Group CountOnes = %d; want 0", xorEntry.Group.CountOnes())
+	}
+	if xorEntry.Name.CountOnes() != 0 {
+		t.Errorf("XOR Name CountOnes = %d; want 0", xorEntry.Name.CountOnes())
+	}
+	if xorEntry.Value.CountOnes() != 0 {
+		t.Errorf("XOR Value CountOnes = %d; want 0", xorEntry.Value.CountOnes())
+	}
+
+	// NOT of all-ones should be all-zero
+	notEntry, err := entryA.Not()
+	if err != nil {
+		t.Fatalf("Not returned error: %v", err)
+	}
+	if notEntry.Domain.CountOnes() != 0 {
+		t.Errorf("NOT Domain CountOnes = %d; want 0", notEntry.Domain.CountOnes())
+	}
+	if notEntry.Group.CountOnes() != 0 {
+		t.Errorf("NOT Group CountOnes = %d; want 0", notEntry.Group.CountOnes())
+	}
+	if notEntry.Name.CountOnes() != 0 {
+		t.Errorf("NOT Name CountOnes = %d; want 0", notEntry.Name.CountOnes())
+	}
+	if notEntry.Value.CountOnes() != 0 {
+		t.Errorf("NOT Value CountOnes = %d; want 0", notEntry.Value.CountOnes())
+	}
+}
+
+func TestNewAllOnesEntry_IntegrationWithBoolSet(t *testing.T) {
+	// Verify that the BitSets returned by NewAllOnesEntry behave correctly for SetBit/TestBit
+	bitLen := 64
+	entry, err := NewAllOnesEntry(bitLen)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(64) returned error: %v", err)
+	}
+
+	// For an all-ones BitSet, calling SetBit on any index should not change CountOnes
+	before := entry.Domain.CountOnes()
+	if before != bitLen {
+		t.Errorf("Initial Domain CountOnes = %d; want %d", before, bitLen)
+	}
+
+	// Attempt setting and clearing a bit and re-count
+	if err := entry.Domain.SetBit(10); err != nil {
+		t.Errorf("Setting bit 10 returned error: %v", err)
+	}
+	if entry.Domain.CountOnes() != bitLen {
+		t.Errorf("After SetBit(10), Domain CountOnes = %d; want %d", entry.Domain.CountOnes(), bitLen)
+	}
+
+	if err := entry.Domain.ClearBit(10); err != nil {
+		t.Errorf("Clearing bit 10 returned error: %v", err)
+	}
+	if entry.Domain.CountOnes() != bitLen-1 {
+		t.Errorf("After ClearBit(10), Domain CountOnes = %d; want %d", entry.Domain.CountOnes(), bitLen-1)
+	}
+
+	// Restore bit and verify count returns to full
+	if err := entry.Domain.SetBit(10); err != nil {
+		t.Errorf("Setting bit 10 returned error: %v", err)
+	}
+	if entry.Domain.CountOnes() != bitLen {
+		t.Errorf("After resetting bit 10, Domain CountOnes = %d; want %d", entry.Domain.CountOnes(), bitLen)
+	}
+}
+
+func TestNewAllOnesEntry_BitLengthsExpose(t *testing.T) {
+	// Ensure the internal bit length (numBits) matches what was requested by verifying ToHex length
+	bitLen := 128
+	entry, err := NewAllOnesEntry(bitLen)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(128) returned error: %v", err)
+	}
+
+	// The hex string (without "0x") should be bitLen/4 characters
+	hexStr := entry.Domain.String()[2:]
+	if len(hexStr) != bitLen/4 {
+		t.Errorf("Hex length = %d; want %d", len(hexStr), bitLen/4)
+	}
+
+	// Validate that CountOnes returns bitLen
+	if entry.Domain.CountOnes() != bitLen {
+		t.Errorf("Domain CountOnes = %d; want %d", entry.Domain.CountOnes(), bitLen)
+	}
+}
+
+// Test that NewAllOnesEntry can be used interchangeably with boolbits.NewBitSet
+func TestNewAllOnesEntry_MatchBoolSetBehavior(t *testing.T) {
+	// Create a standalone BitSet of all ones
+	bitLen := 64
+	expected, err := NewBitSet(bitLen)
+	if err != nil {
+		t.Fatalf("boolbits.NewBitSet(64) error: %v", err)
+	}
+	// Manually set every bit
+	for i := 0; i < bitLen; i++ {
+		if err := expected.SetBit(i); err != nil {
+			t.Fatalf("expected.SetBit(%d) error: %v", i, err)
+		}
+	}
+
+	// Obtain an all-ones entry
+	entry, err := NewAllOnesEntry(bitLen)
+	if err != nil {
+		t.Fatalf("NewAllOnesEntry(64) returned error: %v", err)
+	}
+
+	// Compare Domain of entry to expected standalone BitSet
+	if !entry.Domain.Equals(expected) {
+		t.Error("Entry.Domain does not match manually constructed all-ones BitSet")
+	}
+}

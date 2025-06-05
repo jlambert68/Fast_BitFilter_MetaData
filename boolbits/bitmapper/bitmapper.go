@@ -6,15 +6,6 @@ import (
 	"Fast_BitFilter_MetaData/boolbits/boolbits"
 )
 
-// Entry holds the BitSet for a single combination of domain, group, name, and value.
-// Each field points to the BitSet assigned to that specific value from GenerateBitMaps.
-type Entry struct {
-	Domain *boolbits.BitSet
-	Group  *boolbits.BitSet
-	Name   *boolbits.BitSet
-	Value  *boolbits.BitSet
-}
-
 // GenerateBitMaps takes four string slices (domains, metadataGroupNames, metadataNames, metadataValues),
 // removes duplicates in each, and assigns each unique value a BitSet with a single bit set.
 // The bit length is chosen as the smallest multiple of 64 that can hold all unique values in that slice.
@@ -100,52 +91,4 @@ func GenerateBitMaps(
 	}
 
 	return domainMap, groupMap, nameMap, valueMap, nil
-}
-
-// NewEntry constructs an Entry given a domain, group, name, and value string,
-// along with the maps produced by GenerateBitMaps. Returns an error if any key is missing.
-func NewEntry(
-	domainKey string,
-	groupKey string,
-	nameKey string,
-	valueKey string,
-	domainMap map[string]*boolbits.BitSet,
-	groupMap map[string]*boolbits.BitSet,
-	nameMap map[string]*boolbits.BitSet,
-	valueMap map[string]*boolbits.BitSet,
-) (*Entry, error) {
-	domainBS, ok := domainMap[domainKey]
-	if !ok {
-		return nil, fmt.Errorf("domain key '%s' not found", domainKey)
-	}
-	groupBS, ok := groupMap[groupKey]
-	if !ok {
-		return nil, fmt.Errorf("group key '%s' not found", groupKey)
-	}
-	nameBS, ok := nameMap[nameKey]
-	if !ok {
-		return nil, fmt.Errorf("name key '%s' not found", nameKey)
-	}
-	valueBS, ok := valueMap[valueKey]
-	if !ok {
-		return nil, fmt.Errorf("value key '%s' not found", valueKey)
-	}
-
-	return &Entry{
-		Domain: domainBS,
-		Group:  groupBS,
-		Name:   nameBS,
-		Value:  valueBS,
-	}, nil
-}
-
-// Equals compares two Entries. Returns true if all corresponding BitSets are equal.
-func (e *Entry) Equals(o *Entry) bool {
-	if e == nil || o == nil {
-		return false
-	}
-	return e.Domain.Equals(o.Domain) &&
-		e.Group.Equals(o.Group) &&
-		e.Name.Equals(o.Name) &&
-		e.Value.Equals(o.Value)
 }
